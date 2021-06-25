@@ -12,7 +12,23 @@ import (
 func main() {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/types", server.CreateRecipeType).Methods(http.MethodPost)
+	//Categorias
+	router.HandleFunc("/categories", server.CreateCategory).Methods(http.MethodPost)
+	router.HandleFunc("/categories", server.ShowCategories).Methods(http.MethodGet)
+	router.HandleFunc("/categories/{id}", server.UpdateCategory).Methods(http.MethodPut)
+	router.HandleFunc("/categories/{id}", server.DeleteCategory).Methods(http.MethodDelete)
+
+	//Receitas
+	router.HandleFunc("/recipes", server.CreateRecipe).Methods(http.MethodPost)
+	router.HandleFunc("/recipes", server.ShowRecipes).Methods(http.MethodGet)
+	router.HandleFunc("/recipes/{id}", server.UpdateRecipe).Methods(http.MethodPut)
+	router.HandleFunc("/recipes/{id}", server.DeleteRecipe).Methods(http.MethodDelete)
+
+	//Ingredientes
+	// router.HandleFunc("/categories", server.CreateCategory).Methods(http.MethodPost)
+	// router.HandleFunc("/categories", server.ShowCategories).Methods(http.MethodGet)
+	// router.HandleFunc("/categories/{id}", server.UpdateCategory).Methods(http.MethodPut)
+	// router.HandleFunc("/categories/{id}", server.DeleteCategory).Methods(http.MethodDelete)
 
 	fmt.Println("Server listening on port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
