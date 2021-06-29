@@ -32,6 +32,12 @@ type ingredient struct {
 	RecipeId uint32 `json:"recipeId"`
 }
 
+type tip struct {
+	ID          uint32 `json:"id"`
+	Description string `json:"description"`
+	RecipeId    uint32 `json:"recipeId`
+}
+
 func CreateCategory(rw http.ResponseWriter, r *http.Request) {
 
 	//lendo o corpo da requisição
@@ -561,6 +567,190 @@ func DeleteIngredient(rw http.ResponseWriter, r *http.Request) {
 	//executando o statement
 	if _, error := statement.Exec(ID); error != nil {
 		rw.Write([]byte("Error to delete ingredient"))
+		return
+	}
+
+	rw.WriteHeader(http.StatusNoContent)
+
+}
+
+func CreateTip(rw http.ResponseWriter, r *http.Request) {
+
+	//lendo o corpo da requisição
+	requestBody, error := ioutil.ReadAll(r.Body)
+	if error != nil {
+		rw.Write([]byte("Request body read eror"))
+	}
+
+	//convertendo o json do boyd da requisição para struct
+	var tip tip
+	if error := json.Unmarshal(requestBody, &tip); error != nil {
+		fmt.Println(error)
+		rw.Write([]byte("Error to convert tip to struct"))
+		return
+	}
+
+	//abrindo conexão com obanco
+	db, error := database.Connect()
+	if error != nil {
+		rw.Write([]byte("Error to connect to database"))
+		return
+	}
+	defer db.Close()
+
+	//criando o statement para manipular o banco de dados
+	statement, error := db.Prepare("insert into Tips (description, recipeId) values (?,?)")
+	if error != nil {
+		rw.Write([]byte("Error to create statement"))
+		return
+	}
+
+	defer statement.Close()
+
+	//Executando o statement
+	insert, error := statement.Exec(tip.Description, tip.RecipeId)
+	if error != nil {
+		rw.Write([]byte("Error when running statement"))
+		return
+	}
+
+	//recuperando o id do novo registro no banco
+	insertedId, error := insert.LastInsertId()
+	if error != nil {
+		rw.Write([]byte("Erro when retrieve inserted id"))
+		return
+	}
+
+	//status codes
+	rw.WriteHeader(http.StatusCreated)
+	rw.Write([]byte(fmt.Sprintf("Tip inserted with id: %d", insertedId)))
+
+}
+
+func ShowTips(rw http.ResponseWriter, r *http.Request) {
+
+	//Pegando os paramentros da requisição
+	parameters := mux.Vars(r)
+	ID, error := strconv.ParseInt(parameters["id"], 10, 32)
+
+	if error != nil {
+		rw.Write([]byte("Error while convert parameter to integer"))
+		return
+	}
+
+	//Conectando com o banco
+	db, error := database.Connect()
+	if error != nil {
+		rw.Write([]byte("Error to connect to database"))
+		return
+	}
+
+	defer db.Close()
+
+	//Buscar todos os registros no banco
+	lines, error := db.Query("select * from Tips where recipeId=?", ID)
+	if error != nil {
+		rw.Write([]byte("Error when search ingredients"))
+		return
+	}
+	defer lines.Close()
+
+	var tips []tip
+	for lines.Next() {
+		var tip tip
+		if error := lines.Scan(&tip.ID, &tip.Description, &tip.RecipeId); error != nil {
+			rw.Write([]byte("Error when search ingredients"))
+			return
+		}
+
+		tips = append(tips, tip)
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	if error := json.NewEncoder(rw).Encode(tips); error != nil {
+		rw.Write([]byte("Error when convert ingredients to JSON"))
+		return
+	}
+
+}
+
+func UpdateTip(rw http.ResponseWriter, r *http.Request) {
+	parameters := mux.Vars(r)
+	ID, error := strconv.ParseInt(parameters["id"], 10, 32)
+	if error != nil {
+		rw.Write([]byte("Error when convert parameter to integer"))
+		return
+	}
+
+	//pegando o corpo da requisição
+	requestBody, error := ioutil.ReadAll(r.Body)
+	if error != nil {
+		rw.Write([]byte("Error when read request body"))
+		return
+	}
+
+	var tip tip
+	if error := json.Unmarshal(requestBody, &tip); error != nil {
+		rw.Write([]byte("Error when convert tips to struct"))
+		return
+	}
+
+	//conectando com o banco
+	db, error := database.Connect()
+	if error != nil {
+		rw.Write([]byte("Error to connect to database"))
+		return
+	}
+	defer db.Close()
+
+	//criando o statement para fazer a alteração no banco
+	statement, error := db.Prepare("update Tips set description=?, recipeId = ? where id = ?")
+	if error != nil {
+		rw.Write([]byte("Error when create statement"))
+		return
+	}
+	defer statement.Close()
+
+	//executando o comando sql criado anteriormente
+	if _, error := statement.Exec(tip.Description, tip.RecipeId, ID); error != nil {
+		fmt.Println(error)
+		rw.Write([]byte("Error when update tip"))
+		return
+	}
+
+	rw.WriteHeader(http.StatusNoContent)
+
+}
+
+func DeleteTip(rw http.ResponseWriter, r *http.Request) {
+
+	//recuperando o parametro passado na requisição
+	parameters := mux.Vars(r)
+	ID, error := strconv.ParseInt(parameters["id"], 10, 32)
+	if error != nil {
+		rw.Write([]byte("Error to convert parameter to integer"))
+		return
+	}
+
+	//conectando com o banco
+	db, error := database.Connect()
+	if error != nil {
+		rw.Write([]byte("Error to convert parameter to integer"))
+		return
+	}
+	defer db.Close()
+
+	//criando o statement para executar no banco
+	statement, error := db.Prepare("delete from Tips where id = ?")
+	if error != nil {
+		rw.Write([]byte("Error when create statement"))
+		return
+	}
+	defer statement.Close()
+
+	//executando o statement
+	if _, error := statement.Exec(ID); error != nil {
+		rw.Write([]byte("Error to delete tip"))
 		return
 	}
 

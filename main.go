@@ -30,6 +30,12 @@ func main() {
 	router.HandleFunc("/ingredients/{id}", server.UpdateIngredient).Methods(http.MethodPut)
 	router.HandleFunc("/ingredients/{id}", server.DeleteIngredient).Methods(http.MethodDelete)
 
+	//Dicas
+	router.HandleFunc("/tips", server.CreateTip).Methods(http.MethodPost)
+	router.HandleFunc("/tips/recipe/{id}", server.ShowTips).Methods(http.MethodGet)
+	router.HandleFunc("/tips/{id}", server.UpdateTip).Methods(http.MethodPut)
+	router.HandleFunc("/tips/{id}", server.DeleteTip).Methods(http.MethodDelete)
+
 	fmt.Println("Server listening on port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
 
